@@ -1,0 +1,10 @@
+microk8s-addons:
+  description: "termapp microk8s addon repository"
+  addons:
+    - name: "appsmith-k8s"
+      description: "appsmith addon"
+      version: "1.0.0"
+      check_status: "pod/appsmith-0"
+      supported_architectures:
+        - arm64
+        - amd64
