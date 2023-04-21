@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+# addons/stackgres/enable
+
+import os
+import subprocess
+
+import click
+
+HELM = '/snap/bin/microk8s.helm3'
+AD_NAME = 'stackgres-k8s'
+
+
+@click.command()
+def main():
+    click.echo(f'Enabling {AD_NAME}')
+
+    # add stackgres helm repo
+    subprocess.check_call([
+        HELM, 'repo', 'add', 'stackgres',
+        'https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/'
+    ])
+
+    # update repo
+    subprocess.check_call([
+        HELM, 'repo', 'update'
+    ])
+
+    # install chart
+    subprocess.check_call([
+        HELM, 'install',
+        '--create-namespace',
+        '--namespace', 'stackgres',
+        'stackgres-operator',
+        'stackgres/stackgres-operator'
+    ])
+
+    click.echo(f'Enabled {AD_NAME}')
+
+
+if __name__ == '__main__':
+    main()

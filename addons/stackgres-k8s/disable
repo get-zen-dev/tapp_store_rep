@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+# addons/stackgres/disable
+
+import os
+import subprocess
+
+import click
+
+HELM = '/snap/bin/microk8s.helm3'
+AD_NAME = 'stackgres-k8s'
+
+
+@click.command()
+def main():
+    click.echo(f'Disabling {AD_NAME}')
+
+    subprocess.check_call([
+        HELM, 'uninstall',
+        '--namespace', 'stackgres',
+        'stackgres-operator'
+    ])
+
+    click.echo(f'Disabled {AD_NAME}')
+
+
+if __name__ == '__main__':
+    main()
