@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+# addons/n8n/disable
+
+import os
+import subprocess
+
+import click
+
+HELM = '/snap/bin/microk8s.helm3'
+AD_NAME = 'n8n-k8s'
+
+
+def main():
+    click.echo(f'Disabling {AD_NAME}')
+    subprocess.check_call([
+        HELM, 'uninstall', 'n8n',
+    ])
+    click.echo(f'Disabled {AD_NAME}')
+
+
+if __name__ == '__main__':
+    main()
