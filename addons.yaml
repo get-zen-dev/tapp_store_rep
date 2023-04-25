@@ -15,3 +15,10 @@ microk8s-addons:
       supported_architectures:
         - arm64
         - amd64
+    - name: "n8n-k8s"
+      description: "n8n addon"
+      version: "1.0.0"
+      check_status: "deployment.apps/n8n"
+      supported_architectures:
+        - arm64
+        - amd64

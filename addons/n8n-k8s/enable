@@ -3,6 +3,7 @@
 
 import subprocess
 import click
+from secrets import token_urlsafe
 from base64 import b64encode
 
 HELM = '/snap/bin/microk8s.helm3'
@@ -14,7 +15,7 @@ VALUES_YAML_SOURCE = 'https://raw.githubusercontent.com/8gears/n8n-helm-chart/62
 
 
 def generate_key():
-    return 'this is not a secret'
+    return token_urlsafe(64)
 
 
 def base64_encode(message_ascii: str):
@@ -35,15 +36,9 @@ def main(namespace):
         'curl', '-L', VALUES_YAML_SOURCE, '-o', f'{ARGS_PATH}/values.yaml'
     ])
 
-    key = generate_key()
-    with open(f'{ARGS_PATH}/.n8n', 'w') as key_save:
-        key_save.write(key)
-
-    click.echo(f'n8n encryption key created and saved in {ARGS_PATH}/.n8n')
-
     # put encryption key in values.yaml
     subprocess.check_call([
-        'sed', '-i', f's/encryption_key:/encryption_key: {base64_encode(key)}/', f'{ARGS_PATH}/values.yaml'
+        'sed', '-i', f's/encryption_key:/encryption_key: \'{base64_encode(generate_key())}\'/', f'{ARGS_PATH}/values.yaml'
     ])
 
     # add helm repo
