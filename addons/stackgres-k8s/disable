@@ -14,10 +14,18 @@ AD_NAME = 'stackgres-k8s'
 def main():
     click.echo(f'Disabling {AD_NAME}')
 
+    # uninstall stackgres-operator
     subprocess.check_call([
         HELM, 'uninstall',
         '--namespace', 'stackgres',
         'stackgres-operator'
+    ])
+
+    # uninstall moniroting
+    subprocess.check_call([
+        HELM, 'uninstall',
+        '--namespace', 'monitoring',
+        'prometheus-operator',
     ])
 
     click.echo(f'Disabled {AD_NAME}')
