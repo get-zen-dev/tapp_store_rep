@@ -9,17 +9,12 @@ from base64 import b64encode
 HELM = '/snap/bin/microk8s.helm3'
 AD_NAME = 'n8n-k8s'
 CHART_VERSION = '0.10.0'
-ARGS_PATH = f'/var/snap/microk8s/current/args/{AD_NAME}'
 
 
 @click.command()
 @click.option('--namespace', required=False, default='default', type=str)
 def main(namespace):
     click.echo(f'Enabling {AD_NAME}')
-
-    subprocess.check_call([
-        'mkdir', '-p', ARGS_PATH
-    ])
 
     # add helm repo
     subprocess.check_call([
@@ -28,8 +23,7 @@ def main(namespace):
 
     # install
     subprocess.check_call([
-        HELM, '-f', f'{ARGS_PATH}/values.yaml',
-        'install', 'n8n', 'open-8gears-mod/n8n',
+        HELM, 'install', 'n8n', 'open-8gears-mod/n8n',
         '--namespace', namespace,
         '--version', CHART_VERSION
     ])
