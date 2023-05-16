@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+import os
+import subprocess
+import click
+
+AD_NAME = 'prometheus-k8s'
+HELM = '/snap/bin/microk8s.helm3'
+ENABLE = '/snap/bin/microk8s.enable'
+
+
+def main():
+    click.echo(f'Enabling {AD_NAME}')
+
+    # enable dns
+    subprocess.check_call([
+        ENABLE, 'dns'
+    ])
+
+    # add prometheus helm repo
+    subprocess.check_call([
+        HELM, 'repo', 'add',
+        'prometheus-community',
+        'https://prometheus-community.github.io/helm-charts'
+    ])
+
+    # install prometheus
+    subprocess.check_call([
+        HELM, 'install',
+        '--create-namespace', '--namespace',
+        'monitoring', 'prometheus-operator',
+        'prometheus-community/kube-prometheus-stack'
+    ])
+
+    click.echo(f'Enabled {AD_NAME}')
+
+
+if __name__ == '__main__':
+    main()

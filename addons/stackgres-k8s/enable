@@ -11,9 +11,20 @@ ENABLE = '/snap/bin/microk8s.enable'
 AD_NAME = 'stackgres-k8s'
 CHART_VERSION = '1.4.3'
 
+OPTIONS = [
+    '--set', 'grafana.autoEmbed=true',
+    '--set-string', 'grafana.webHost=prometheus-operator-grafana.monitoring',
+    '--set-string', 'grafana.secretNamespace=monitoring',
+    '--set-string', 'grafana.secretName=prometheus-operator-grafana',
+    '--set-string', 'grafana.secretUserKey=admin-user',
+    '--set-string', 'grafana.secretPasswordKey=admin-password',
+    '--set-string', 'adminui.service.type=ClusterIP',
+]
 
+
+@click.option('--embed-prometheus', is_flag=True, help='to use prometheus or not')
 @click.command()
-def main():
+def main(embed_prometheus):
     click.echo(f'Enabling {AD_NAME}')
 
     # enable dns
@@ -21,20 +32,12 @@ def main():
         ENABLE, 'dns'
     ])
 
-    # add prometheus helm repo
-    subprocess.check_call([
-        HELM, 'repo', 'add',
-        'prometheus-community',
-        'https://prometheus-community.github.io/helm-charts'
-    ])
-
-    # install prometheus
-    subprocess.check_call([
-        HELM, 'install',
-        '--create-namespace', '--namespace',
-        'monitoring', 'prometheus-operator',
-        'prometheus-community/kube-prometheus-stack'
-    ])
+    if embed_prometheus:
+        click.echo('Enabling prometheus')
+        # enable prometheus
+        subprocess.check_call([
+            ENABLE, 'prometheus-k8s'
+        ])
 
     # add stackgres helm repo
     subprocess.check_call([
@@ -47,22 +50,20 @@ def main():
         HELM, 'repo', 'update'
     ])
 
-    # install chart
-    subprocess.check_call([
+    cmd = [
         HELM, 'install',
         '--create-namespace', '--namespace', 'stackgres',
         'stackgres-operator',
-        '--set', 'grafana.autoEmbed=true',
-        '--set-string', 'grafana.webHost=prometheus-operator-grafana.monitoring',
-        '--set-string', 'grafana.secretNamespace=monitoring',
-        '--set-string', 'grafana.secretName=prometheus-operator-grafana',
-        '--set-string', 'grafana.secretUserKey=admin-user',
-        '--set-string', 'grafana.secretPasswordKey=admin-password',
-        '--set-string', 'adminui.service.type=ClusterIP',
-        '--version', CHART_VERSION,
-        'stackgres-charts/stackgres-operator'
-    ])
+    ]
+    if embed_prometheus:
+        for option in OPTIONS:
+            cmd.append(option)
+    for option in ['--version', CHART_VERSION,
+                   'stackgres-charts/stackgres-operator']:
+        cmd.append(option)
 
+    # install chart
+    subprocess.check_call(cmd)
     click.echo(f'Enabled {AD_NAME}')
 
 

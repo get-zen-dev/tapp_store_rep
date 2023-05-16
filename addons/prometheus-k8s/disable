@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-# addons/stackgres/disable
-
-import os
 import subprocess
-
 import click
 
+AD_NAME = 'prometheus-k8s'
 HELM = '/snap/bin/microk8s.helm3'
-AD_NAME = 'stackgres-k8s'
+ENABLE = '/snap/bin/microk8s.enable'
 
 
-@click.command()
 def main():
     click.echo(f'Disabling {AD_NAME}')
 
-    # uninstall stackgres-operator
+    # uninstall prometheus
     subprocess.check_call([
         HELM, 'uninstall',
-        '--namespace', 'stackgres',
-        'stackgres-operator'
+        '--namespace', 'monitoring',
+        'prometheus-operator',
     ])
 
     click.echo(f'Disabled {AD_NAME}')
