@@ -29,7 +29,7 @@ def main():
     # install
     subprocess.check_call([
         HELM, 'install', 'n8n', 'open-8gears-mod/n8n',
-        '--namespace', 'n8n',
+        '--create-namespace', '--namespace', 'n8n',
         '--version', CHART_VERSION
     ])
 
