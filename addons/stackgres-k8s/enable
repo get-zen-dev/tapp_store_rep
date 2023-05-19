@@ -18,7 +18,6 @@ OPTIONS = [
     '--set-string', 'grafana.secretName=prometheus-operator-grafana',
     '--set-string', 'grafana.secretUserKey=admin-user',
     '--set-string', 'grafana.secretPasswordKey=admin-password',
-    '--set-string', 'adminui.service.type=ClusterIP',
 ]
 
 
@@ -59,7 +58,8 @@ def main(embed_prometheus):
         for option in OPTIONS:
             cmd.append(option)
     for option in ['--version', CHART_VERSION,
-                   'stackgres-charts/stackgres-operator']:
+                   'stackgres-charts/stackgres-operator',
+                   '--set-string', 'adminui.service.type=ClusterIP']:
         cmd.append(option)
 
     # install chart
