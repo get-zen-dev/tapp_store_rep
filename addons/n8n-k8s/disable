@@ -14,6 +14,7 @@ def main():
     click.echo(f'Disabling {AD_NAME}')
     subprocess.check_call([
         HELM, 'uninstall', 'n8n',
+        '--namespace', 'n8n'
     ])
     click.echo(f'Disabled {AD_NAME}')
 
