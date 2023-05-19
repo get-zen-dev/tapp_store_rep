@@ -13,7 +13,7 @@ CHART_VERSION = '0.10.0'
 
 
 @click.command()
-def main(namespace):
+def main():
     click.echo(f'Enabling {AD_NAME}')
 
     # enable dns
