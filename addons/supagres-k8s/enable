@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+import subprocess
+
+import click
+import json
+from pathlib import Path
+
+HELM = '/snap/bin/microk8s.helm3'
+ENABLE = '/snap/bin/microk8s.enable'
+STATUS = '/snap/bin/microk8s.status'
+KUBECTL = '/snap/bin/microk8s.kubectl'
+AD_NAME = 'supagres-k8s'
+
+SUPABASE_CHART = 'https://github.com/get-zen-dev/supabase-kubernetes'
+
+
+def install_supabase():
+    home = str(Path.home())
+    supabase_root = Path(f"{home}/.supabase")
+    if not supabase_root.is_dir():
+        subprocess.check_call(
+            ['mkdir', '.supabase'], cwd=Path.home()
+        )
+
+    supabase_repo = Path(f'{home}/.supabase/supabase-kubernetes')
+    if not supabase_repo.is_dir():
+        clone_cmd = ['git', 'clone', SUPABASE_CHART]
+        clone_process = subprocess.Popen(
+            clone_cmd,
+            cwd=f'{home}/.supabase'
+        )
+        clone_process.wait()
+        assert clone_process.returncode == 0
+
+    pswd = subprocess.check_output(
+        [KUBECTL, 'get', 'secret', 'supabase-db', '--template',
+            '"{{ printf "%s" (index .data "superuser-password" | base64decode) }}"']
+    ).decode()
+
+    click.echo(f'Generated password: {pswd}')
+
+    # create JWT secret
+    subprocess.check_call(
+        [KUBECTL, '-n', 'default', 'create', 'secret', 'generic', 'demo-supabase-jwt',
+            '--from-literal=anonKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICAgInJvbGUiOiAiYW5vbiIsCiAgICAiaXNzIjogInN1cGFiYXNlIiwKICAgICJpYXQiOiAxNjc1NDAwNDAwLAogICAgImV4cCI6IDE4MzMxNjY4MDAKfQ.ztuiBzjaVoFHmoljUXWmnuDN6QU2WgJICeqwyzyZO88"',
+            '--from-literal=serviceKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICAgInJvbGUiOiAic2VydmljZV9yb2xlIiwKICAgICJpc3MiOiAic3VwYWJhc2UiLAogICAgImlhdCI6IDE2NzU0MDA0MDAsCiAgICAiZXhwIjogMTgzMzE2NjgwMAp9.qNsmXzz4tG7eqJPh1Y58DbtIlJBauwpqx39UF-MwM8k"',
+            '--from-literal=secret="abcdefghijklmnopqrstuvwxyz123456"']
+    )
+
+    # create SMTP secret
+    subprocess.check_call(
+        [KUBECTL, '-n', 'default', 'create', 'secret', 'generic', 'demo-supabase-smtp',
+            '--from-literal=username="your-mail@example.com"',
+            f'--from-literal=password="{pswd}"']
+    )
+
+    # creates DB secret
+    subprocess.check_call(
+        [KUBECTL, '-n', 'default', 'create', 'secret', 'generic', 'demo-supabase-db',
+            '--from-literal=username="postgres"',
+            f'--from-literal=password="{pswd}"']
+    )
+
+    # install chart
+    install_chart_cmd = [
+        HELM, 'install', 'demo', '-f', 'values.stackgres.yaml', '.'
+    ]
+    subprocess.check_call(
+        install_chart_cmd,
+        cwd=f'{home}/.supabase/supabase-kubernetes/charts/supabase'
+    )
+
+
+def check_if_stackgres_enabled():
+    check_stackgres_cmd = [
+        STATUS, '-a', 'stackgres-k8s'
+    ]
+    return subprocess.check_output(
+        check_stackgres_cmd,
+    ).decode() == 'enabled'
+
+
+def check_if_cluster_exists():
+    check_cluster_cmd = [
+        KUBECTL, 'get', 'statefulset.apps/supabase-db', '-o', 'json'
+    ]
+    check_proc = subprocess.Popen(
+        check_cluster_cmd
+    )
+    check_proc.wait()
+    return check_proc.returncode == 0
+
+
+@click.command()
+def main():
+    click.echo(f'Enabling: {AD_NAME}')
+
+    # enable stackgres
+    if not check_if_stackgres_enabled():
+        subprocess.check_call([
+            ENABLE, 'stackgres-k8s'
+        ])
+        # TODO:wait for stackgres started
+
+    if not check_if_cluster_exists():
+        # create pv, cluster
+        configs = ['poolconfig.yaml', 'script.yaml', 'pv.yaml', 'cluster.yaml']
+        for config in configs:
+            subprocess.check_call([
+                KUBECTL, 'apply', '-f', f'configs/{config}'
+            ])
+        # TODO:wait for cluster created
+
+    # install supabase
+    install_supabase()
+    click.echo(f'Enabled: {AD_NAME}')
+
+
+if __name__ == '__main__':
+    main()

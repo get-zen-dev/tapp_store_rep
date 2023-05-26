@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+import subprocess
+
+import click
+
+HELM = '/snap/bin/microk8s.helm3'
+ENABLE = '/snap/bin/microk8s.enable'
+DISABLE = '/snap/bin/microk8s.disable'
+KUBECTL = '/snap/bin/microk8s.kubectl'
+AD_NAME = 'supagres-k8s'
+
+
+@click.command()
+def main():
+    click.echo(f'Disabling {AD_NAME}')
+
+    # disable stackgres
+    subprocess.check_call([
+        DISABLE, 'stackgres-k8s'
+    ])
+
+    # uninstall demo
+    subprocess.check_call([
+        HELM, 'uninstall', 'demo'
+    ])
+
+    resources = [
+        ['secret', 'demo-supabase-db'],
+        ['secret', 'demo-supabase-jwt'],
+        ['secret', 'demo-supabase-smtp'],
+
+        ['sgcluster', 'supabase-db'],
+        ['sgscript', 'supabase-initdb'],
+        ['sgpoolconfig', 'supabase-db']
+    ]
+    for resource in resources:
+        cmd = [KUBECTL, 'delete']
+        cmd.extend(resource)
+        subprocess.check_call(cmd)
+
+    click.echo('Disabled')
+
+
+if __name__ == '__main__':
+    main()

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # addons/stackgres/enable
 
-import os
 import subprocess
 
 import click
 
 HELM = '/snap/bin/microk8s.helm3'
 ENABLE = '/snap/bin/microk8s.enable'
+STATUS = '/snap/bin/microk8s.status'
 AD_NAME = 'stackgres-k8s'
 CHART_VERSION = '1.4.3'
 
-OPTIONS = [
+MONITORING_OPTIONS = [
     '--set', 'grafana.autoEmbed=true',
     '--set-string', 'grafana.webHost=prometheus-operator-grafana.monitoring',
     '--set-string', 'grafana.secretNamespace=monitoring',
@@ -21,21 +21,41 @@ OPTIONS = [
 ]
 
 
-@click.option('--embed-prometheus', is_flag=True, help='to use prometheus or not')
+def check_if_prometheus_enabled():
+    check_prometheus_cmd = [
+        STATUS, '-a', 'prometheus-k8s'
+    ]
+    return subprocess.check_output(
+        check_prometheus_cmd,
+    ).decode() == 'enabled'
+
+
+cmd = [
+        HELM, 'install',
+        '--create-namespace', '--namespace', 'stackgres',
+        'stackgres-operator',
+        '--version', CHART_VERSION,
+        'stackgres-charts/stackgres-operator',
+        '--set-string', 'adminui.service.type=ClusterIP'
+]
+
+
 @click.command()
-def main(embed_prometheus):
+def main():
+    global cmd
     click.echo(f'Enabling {AD_NAME}')
 
-    # enable dns
-    subprocess.check_call([
-        ENABLE, 'dns'
-    ])
+    # enable dependencies
+    dependecies = ['dns', 'helm3']
+    for dependency in dependecies:
+        subprocess.check_call([ENABLE, dependency])
 
-    if embed_prometheus:
+    if check_if_prometheus_enabled():
+        cmd = cmd.extend(MONITORING_OPTIONS)
         click.echo('Enabling prometheus')
         # enable prometheus
         subprocess.check_call([
-            ENABLE, 'prometheus-k8s'
+           ENABLE, 'prometheus-k8s'
         ])
 
     # add stackgres helm repo
@@ -48,19 +68,6 @@ def main(embed_prometheus):
     subprocess.check_call([
         HELM, 'repo', 'update'
     ])
-
-    cmd = [
-        HELM, 'install',
-        '--create-namespace', '--namespace', 'stackgres',
-        'stackgres-operator',
-    ]
-    if embed_prometheus:
-        for option in OPTIONS:
-            cmd.append(option)
-    for option in ['--version', CHART_VERSION,
-                   'stackgres-charts/stackgres-operator',
-                   '--set-string', 'adminui.service.type=ClusterIP']:
-        cmd.append(option)
 
     # install chart
     subprocess.check_call(cmd)
