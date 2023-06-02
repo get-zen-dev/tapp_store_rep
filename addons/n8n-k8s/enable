@@ -23,12 +23,12 @@ def main():
 
     # add helm repo
     subprocess.check_call([
-        HELM, 'repo', 'add', 'open-8gears-mod', 'https://get-zen-dev.github.io/n8n-helm-chart/'
+        HELM, 'repo', 'add', 'getzen-n8n', 'https://get-zen-dev.github.io/kubernetes-helm-n8n/'
     ])
 
     # install
     subprocess.check_call([
-        HELM, 'install', 'n8n', 'open-8gears-mod/n8n',
+        HELM, 'install', 'n8n', 'getzen-n8n/n8n',
         '--create-namespace', '--namespace', 'n8n',
         '--version', CHART_VERSION
     ])
