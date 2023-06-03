@@ -11,7 +11,7 @@ STATUS = '/snap/bin/microk8s.status'
 KUBECTL = '/snap/bin/microk8s.kubectl'
 AD_NAME = 'supagres-k8s'
 
-SUPABASE_CHART = 'https://github.com/get-zen-dev/supabase-kubernetes'
+SUPABASE_CHART = 'https://github.com/get-zen-dev/kubernetes-helm-supabase'
 
 
 def install_supabase():
